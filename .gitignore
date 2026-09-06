@@ -1,0 +1,12 @@
+# 各自のPCで生成される物件分析（個人データ）は配布物に含めない
+# ※HTMLカルテだけでなく、抽出値・計算結果・台帳（json/md/csv等）も個人データなので
+#   analysis/ 配下は丸ごと除外する（フォルダは prefill 実行時に自動生成される）
+analysis/
+
+# npm部品（このアプリはNode標準のみで動くが念のため）
+node_modules/
+package-lock.json
+
+# バックアップ・一時
+*.bak_*
+*.tmp

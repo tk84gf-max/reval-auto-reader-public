@@ -1,0 +1,5 @@
+# シェルスクリプト(Mac)はLF必須（CRLFだと「bad interpreter」で動かない）
+*.command text eol=lf
+*.sh      text eol=lf
+# バッチ(Windows)はCRLF
+*.bat     text eol=crlf

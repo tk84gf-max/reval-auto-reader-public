@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReVal 自動読み取り｜物件ワークスペース</title>
+<style>
+  :root{--blue:#2563eb;--line:#e5e7eb;--muted:#6b7280;--ok:#16a34a;--ng:#dc2626;--bg:#f8fafc;}
+  *{box-sizing:border-box;}
+  body{font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;margin:0;background:var(--bg);color:#111827;}
+  .wrap{max-width:880px;margin:0 auto;padding:22px 16px 80px;}
+  h1{font-size:21px;margin:4px 0 2px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:16px;}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,.04);}
+  .hidden{display:none!important;}
+  .note{font-size:12.5px;color:var(--muted);}
+  .err{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:10px 12px;border-radius:9px;font-size:13.5px;}
+  /* 常設ドロップ */
+  #drop{border:2px dashed #c7d2fe;border-radius:14px;padding:30px 18px;text-align:center;cursor:pointer;transition:.15s;background:#fdfdff;}
+  #drop.hot{border-color:var(--blue);background:#eef2ff;}
+  #drop .big{font-size:16px;font-weight:600;margin-bottom:6px;}
+  /* ランキング */
+  #rankTable{width:100%;border-collapse:collapse;font-size:13px;}
+  #rankTable th{background:#f3f6f9;border-bottom:2px solid #b9c4cf;padding:7px 8px;text-align:left;}
+  #rankTable td{padding:7px 8px;border-bottom:1px solid #eef0f2;}
+  #rankTable td.r,#rankTable th.r{text-align:right;font-variant-numeric:tabular-nums;}
+  /* 物件カード */
+  .propcard{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.05);overflow:hidden;}
+  .pc-head{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fbfcfe;border-bottom:1px solid var(--line);cursor:pointer;}
+  .pc-tog{color:var(--muted);font-size:13px;width:14px;}
+  .pc-title{font-weight:700;font-size:15px;}
+  .pc-badge{font-size:12px;}
+  .pc-spacer{flex:1;}
+  .pc-x{border:0;background:transparent;color:#9aa3b2;font-size:20px;cursor:pointer;line-height:1;padding:0 4px;}
+  .pc-x:hover{color:var(--ng);}
+  .propcard.collapsed .pc-body{display:none;}
+  .pc-body{padding:16px;}
+  .pc-fields{display:grid;grid-template-columns:120px 1fr 120px 1fr;gap:8px 10px;align-items:center;margin-bottom:12px;}
+  .pc-fields label{font-size:12px;color:#374151;}
+  .pc-fields input,.pc-fields select{width:100%;padding:7px 8px;border:1px solid var(--line);border-radius:7px;font-size:13px;}
+  .pc-fields input.warn{border-color:#f59e0b;background:#fffbeb;}
+  .warnbox{background:#fffbeb;border:1px solid #fde68a;color:#92400e;padding:8px 10px;border-radius:8px;font-size:12.5px;margin-bottom:10px;}
+  pre.carte{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:10px;overflow:auto;font-size:12px;line-height:1.5;}
+  .btn{background:var(--blue);color:#fff;border:0;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;}
+  .btn.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue);}
+  .spinner{display:inline-block;width:16px;height:16px;border:3px solid #c7d2fe;border-top-color:var(--blue);border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle;margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .pc-detailwrap{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;}
+  .pc-detaildrop{border:2px dashed #c7d2fe;border-radius:10px;padding:14px;text-align:center;cursor:pointer;background:#fdfdff;font-size:13px;}
+  .pc-detaildone{margin-top:8px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;padding:9px 11px;border-radius:9px;font-size:12.5px;line-height:1.6;}
+  .pc-reval{width:100%;height:1400px;border:1px solid var(--line);border-radius:10px;background:#fff;margin-top:6px;}
+  .badgeA{color:#15803d;font-weight:700;} .badgeD{color:#b91c1c;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🏠 ReVal 物件ワークスペース</h1>
+  <div class="sub">マイソクを放り込むほど、物件カードが積み上がります（複数まとめてOK）。各カードで満室想定／満室実数／現況実数の比較まで。</div>
+
+  <!-- 常設ドロップ -->
+  <div class="card">
+    <div id="drop">
+      <div class="big">📄 マイソクをここにドロップ（複数可）</div>
+      <div class="note">クリックで選択 ／ 画像をコピーして <b>Ctrl+V</b>（PDF / JPG / PNG）。入れるたびに下へカードが増えます。</div>
+    </div>
+    <input type="file" id="file" class="hidden" accept="application/pdf,image/png,image/jpeg" multiple>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+      <input id="urlInput" type="text" placeholder="物件ページのURLを貼り付け（公開ページ用。楽待/健美家はログイン必須で不可）" style="flex:1;padding:9px 10px;border:1px solid var(--line);border-radius:7px;font-size:13px;">
+      <button id="urlBtn" class="btn">URLから読み取る</button>
+    </div>
+    <div id="urlMsg" class="note" style="margin-top:6px;"></div>
+  </div>
+
+  <!-- ランキング -->
+  <div class="card hidden" id="rankCard">
+    <div style="font-weight:700;margin-bottom:8px;">📊 ランキング（CCR順）</div>
+    <table id="rankTable"><thead><tr><th>#</th><th>物件</th><th class="r">価格</th><th class="r">表面</th><th class="r">CCR</th><th class="r">CF率</th></tr></thead><tbody id="rankBody"></tbody></table>
+  </div>
+
+  <div id="cards"></div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// アプリ本体（localhost:5178）以外で開いたら警告
+if (!(/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && location.port === '5178')) {
+  document.querySelector('.wrap').insertAdjacentHTML('afterbegin',
+    '<div class="err" style="margin-bottom:16px;line-height:1.6;">⚠️ これはプレビュー表示で、アプリ本体ではありません（読み取りは動きません）。<br>Windowsは <b>「ReVal自動読み取りを起動.bat」</b>／Macは <b>「ReVal自動読み取りを起動.command」</b> をダブルクリックし、ブラウザのアドレスが <b>localhost:5178</b> の画面で使ってください。</div>');
+}
+
+const drop = $('drop'), fileInput = $('file');
+drop.addEventListener('click', () => fileInput.click());
+['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('hot'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('hot'); }));
+drop.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+fileInput.addEventListener('change', e => { handleFiles(e.target.files); fileInput.value=''; });
+document.addEventListener('paste', e => {
+  const items = (e.clipboardData && e.clipboardData.items) || []; const fs = [];
+  for (const it of items) if (it.type && it.type.indexOf('image/') === 0) { const b = it.getAsFile(); if (b) fs.push(new File([b], '貼り付け画像.png', { type: b.type || 'image/png' })); }
+  if (fs.length) { handleFiles(fs); e.preventDefault(); }
+});
+
+function readB64(f){ return new Promise(res => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.readAsDataURL(f); }); }
+function numv(v){ v = String(v).trim(); return v === '' ? null : Number(v); }
+function yen(n){ return (n==null||isNaN(n)) ? '―' : Math.round(n).toLocaleString('ja-JP'); }
+function pct(n){ return (n==null||isNaN(n)) ? '―' : Number(n).toFixed(2); }
+
+const okTypes = ['application/pdf','image/png','image/jpeg'];
+function handleFiles(list){
+  const files = Array.from(list || []).filter(f => okTypes.includes(f.type));
+  files.forEach(addCardFromFile);
+}
+
+const cards = []; // 各カードのAPI（getResult等）
+
+async function addCardFromFile(f){
+  const c = buildCard();
+  c.status('「' + f.name + '」を読み取り中…');
+  try {
+    const b64 = await readB64(f);
+    const r = await fetch('/extract', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ mediaType:f.type, data:b64 }) }).then(x=>x.json());
+    if (!r.ok) return c.fail(r.error || '読み取りに失敗');
+    c.init(r.fields, f.name);
+  } catch(e){ c.fail('通信エラー: ' + e.message); }
+}
+
+// ---- URLから読み取り（公開ページ用。ログイン必須サイトは不可）----
+$('urlBtn').addEventListener('click', goUrl);
+$('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') goUrl(); });
+function goUrl(){
+  const u = $('urlInput').value.trim();
+  if (!/^https?:\/\//i.test(u)) { $('urlMsg').textContent = '⚠️ http:// または https:// で始まるURLを入れてください'; return; }
+  $('urlMsg').textContent = '';
+  addCardFromUrl(u);
+  $('urlInput').value = '';
+}
+async function addCardFromUrl(u){
+  const c = buildCard();
+  c.status('URLを読み取り中…（' + u.slice(0, 60) + '）');
+  try {
+    const r = await fetch('/extract-url', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ url: u }) }).then(x=>x.json());
+    if (!r.ok) return c.fail(r.error || 'URLから読み取れませんでした');
+    c.init(r.fields, r.fields.name || u);
+  } catch(e){ c.fail('通信エラー: ' + e.message); }
+}
+
+const FIELDS = [
+  ['name','物件名','text'],['address','住所','text'],
+  ['price','価格(万円)','number'],['grossYield','表面利回り(%)','number'],
+  ['buildAge','築年数','number'],['struct','構造','struct'],
+  ['floorArea','延床(㎡)','number'],['rooms','戸数','number'],
+  ['landArea','土地(㎡)','number'],['routePrice','路線価(万/㎡)','number'],
+];
+const STRUCTS = [['wood','木造(22)'],['steel_light','軽量鉄骨3mm以下(19)'],['steel_med','軽量鉄骨3〜4mm(27)'],['steel','重量鉄骨(34)'],['rc','RC(47)'],['src','SRC(47)']];
+
+function buildCard(){
+  const el = document.createElement('div'); el.className = 'propcard';
+  let fieldsHtml = '';
+  for (const [k,label,type] of FIELDS){
+    let inp;
+    if (type === 'struct') inp = '<select data-k="'+k+'">'+STRUCTS.map(s=>'<option value="'+s[0]+'">'+s[1]+'</option>').join('')+'</select>';
+    else inp = '<input data-k="'+k+'" type="'+(type==='number'?'number':'text')+'" step="any">';
+    fieldsHtml += '<label>'+label+'</label>'+inp;
+  }
+  el.innerHTML =
+    '<div class="pc-head"><span class="pc-tog">▾</span><span class="pc-title">読み取り中…</span><span class="pc-badge"></span><span class="pc-spacer"></span><button class="pc-x" title="閉じる">×</button></div>'+
+    '<div class="pc-body">'+
+      '<div class="pc-status note"></div>'+
+      '<div class="pc-warn"></div>'+
+      '<div class="pc-seismic"></div>'+
+      '<div class="pc-commercial"></div>'+
+      '<div class="pc-leasehold"></div>'+
+      '<div class="pc-fields hidden">'+fieldsHtml+'</div>'+
+      '<div class="pc-calcerr err hidden"></div>'+
+      '<pre class="carte pc-carte hidden"></pre>'+
+      '<div class="pc-eval3 hidden"></div>'+
+      '<div class="pc-detailwrap hidden">'+
+        '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">📎 詳細資料を追加（レントロール・ランニングコストなど）</div>'+
+        '<div class="pc-detaildrop">ここにドロップ／クリックで選択（複数可）→ 満室実数・現況実数も算出</div>'+
+        '<input type="file" class="pc-detailfile hidden" accept="application/pdf,image/png,image/jpeg" multiple>'+
+        '<div class="pc-detailreading note hidden" style="margin-top:8px;"><span class="spinner"></span>詳細資料を読み取り中…</div>'+
+        '<div class="pc-detaildone hidden"></div>'+
+      '</div>'+
+      '<div class="pc-revalwrap hidden" style="margin-top:14px;">'+
+        '<div style="font-weight:600;font-size:13px;margin-bottom:4px;">📊 ReVal（想定/満室実数/現況実数の3列比較＋シミュレーション）</div>'+
+        '<iframe class="pc-reval"></iframe>'+
+        '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn pc-refresh">🔄 分析を更新（手入力を反映）</button><button class="btn ghost pc-opentab">↗ 別タブで大きく開く</button></div>'+
+      '</div>'+
+    '</div>';
+  $('cards').prepend(el);
+  const q = s => el.querySelector(s);
+
+  let lastResult = null, lastHtmlUrl = null, actuals = null;
+  q('.pc-head').addEventListener('click', e => { if (e.target.closest('.pc-x')) return; el.classList.toggle('collapsed'); q('.pc-tog').textContent = el.classList.contains('collapsed') ? '▸' : '▾'; });
+  q('.pc-x').addEventListener('click', () => { const i = cards.indexOf(api); if (i>=0) cards.splice(i,1); el.remove(); renderRanking(); });
+  q('.pc-opentab').addEventListener('click', () => { if (lastHtmlUrl) window.open(lastHtmlUrl, '_blank'); });
+  q('.pc-refresh').addEventListener('click', () => doCalc(true));
+
+  function getFields(){ const o={}; el.querySelectorAll('.pc-fields [data-k]').forEach(inp=>{ const k=inp.dataset.k; o[k] = (inp.tagName==='SELECT') ? inp.value : (['name','address'].includes(k)? inp.value : numv(inp.value)); }); return o; }
+
+  async function doCalc(fresh){
+    const fl = getFields();
+    q('.pc-calcerr').classList.toggle('hidden', true);
+    if (!(fl.price>0 && fl.grossYield>0 && fl.floorArea>0)) { q('.pc-calcerr').textContent='⚠️ 価格・表面利回り・延床のいずれかが空です'; q('.pc-calcerr').classList.remove('hidden'); return; }
+    if (actuals) fl.actual = actuals;
+    try {
+      const j = await fetch('/calculate', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(fl) }).then(x=>x.json());
+      if (!j.ok){ q('.pc-calcerr').textContent='⚠️ '+(j.error||'計算失敗'); q('.pc-calcerr').classList.remove('hidden'); return; }
+      lastResult = j.result; lastHtmlUrl = j.htmlUrl;
+      q('.pc-carte').textContent = j.carte || ''; q('.pc-carte').classList.remove('hidden');
+      const sm = j.result && j.result.seismic;
+      if (sm && sm.note) { const red = sm.level==='old'; q('.pc-seismic').innerHTML = '<div class="warnbox"'+(red?' style="background:#fef2f2;border-color:#fecaca;color:#991b1b;"':'')+'>'+sm.note+'</div>'; }
+      else { q('.pc-seismic').innerHTML = ''; }
+      const cm = j.result && j.result.commercial;
+      if (cm && cm.note) { q('.pc-commercial').innerHTML = '<div class="warnbox">'+cm.note+'</div>'; }
+      else { q('.pc-commercial').innerHTML = ''; }
+      const lh = j.result && j.result.leasehold;
+      if (lh && lh.note) { const red = lh.type==='teiki'; q('.pc-leasehold').innerHTML = '<div class="warnbox"'+(red?' style="background:#fef2f2;border-color:#fecaca;color:#991b1b;"':'')+'>'+lh.note+'</div>'; }
+      else { q('.pc-leasehold').innerHTML = ''; }
+      const ev = j.result && j.result.eval3;
+      if (ev && ev.hasActual) {
+        const row = (lb,t)=>'<tr><td style="padding:3px 6px;">'+lb+'</td><td class="r" style="padding:3px 6px;">'+pct(t.CCR)+'% <b>'+t.gCCR+'</b></td><td class="r" style="padding:3px 6px;">'+pct(t.repayR)+'% <b>'+t.gRepay+'</b></td><td class="r" style="padding:3px 6px;">'+pct(t.cfR)+'% <b>'+t.gCFR+'</b></td></tr>';
+        let h='<div style="border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-top:4px;background:#f8fafc;">';
+        h+='<div style="font-weight:600;font-size:13px;margin-bottom:6px;">📊 3軸評価：想定（マイソク） vs 実態（レントロール）</div>';
+        h+='<table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr style="color:#6b7280;"><th style="text-align:left;padding:3px 6px;">前提</th><th class="r" style="padding:3px 6px;">CCR</th><th class="r" style="padding:3px 6px;">返済比率</th><th class="r" style="padding:3px 6px;">CF率</th></tr></thead><tbody>';
+        h+=row('① 想定(マイソク)', ev.quote);
+        if(ev.fullActual) h+=row('② 満室(実数)', ev.fullActual);
+        if(ev.cur) h+=row('③ 現況(実数)', ev.cur);
+        h+='</tbody></table></div>';
+        q('.pc-eval3').innerHTML=h; q('.pc-eval3').classList.remove('hidden');
+      } else { q('.pc-eval3').innerHTML=''; q('.pc-eval3').classList.add('hidden'); }
+      q('.pc-title').textContent = fl.name || '物件';
+      q('.pc-badge').innerHTML = badgeHtml(j.result);
+      // 初回の計算成功時は（手入力で項目が揃ったケースでも）分析結果を自動表示。
+      // 以降は編集ごとに再読込しない（入力中のiframeリセット防止）。手入力の反映は「🔄分析を更新」ボタンで。
+      const showFresh = fresh || q('.pc-revalwrap').classList.contains('hidden');
+      if (j.htmlUrl && showFresh){ q('.pc-reval').src = j.htmlUrl + '?v=' + Date.now(); q('.pc-revalwrap').classList.remove('hidden'); }
+      renderRanking();
+    } catch(e){ q('.pc-calcerr').textContent='通信エラー: '+e.message; q('.pc-calcerr').classList.remove('hidden'); }
+  }
+
+  // 詳細資料（フェーズ2）ドロップ
+  const dd = q('.pc-detaildrop'), df = q('.pc-detailfile');
+  dd.addEventListener('click', () => df.click());
+  ['dragover','dragenter'].forEach(ev => dd.addEventListener(ev, e => { e.preventDefault(); dd.style.background='#eef2ff'; }));
+  ['dragleave','drop'].forEach(ev => dd.addEventListener(ev, e => { e.preventDefault(); dd.style.background='#fdfdff'; }));
+  dd.addEventListener('drop', e => handleDetail(e.dataTransfer.files));
+  df.addEventListener('change', e => { handleDetail(e.target.files); df.value=''; });
+
+  async function handleDetail(list){
+    const files = Array.from(list||[]).filter(f=>okTypes.includes(f.type) && f.size<=5*1024*1024);
+    if (!files.length){ q('.pc-detaildone').textContent='読み取れる資料がありません（PDF/画像・5MB以下）'; q('.pc-detaildone').classList.remove('hidden'); return; }
+    q('.pc-detailreading').classList.remove('hidden'); q('.pc-detaildone').classList.add('hidden');
+    try {
+      const payload = await Promise.all(files.map(async f => ({ mediaType:f.type, data: await readB64(f) })));
+      const j = await fetch('/extract-detail', { method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify({ files: payload }) }).then(x=>x.json());
+      q('.pc-detailreading').classList.add('hidden');
+      if (!j.ok){ q('.pc-detaildone').textContent='⚠️ '+(j.error||'読み取り失敗'); q('.pc-detaildone').classList.remove('hidden'); return; }
+      actuals = j.actuals || {};
+      await doCalc(true); // 実数を載せて再計算＋ReVal再生成
+      const a = actuals, d = lastResult && lastResult.detail;
+      let h = '✅ 実数を反映しました（ReValに3列比較が出ます・数字は上で直せます）<br>満室年額:'+yen(a.fullRentAnnual)+' ／ 現況年額:'+yen(a.currentRentAnnual);
+      if (d){ h += '<br>満室実数CF:'+yen(d.full.CF)+' ／ 現況実数CF:'+(d.cur?yen(d.cur.CF):'―'); }
+      if (a.notes) h += '<br><span style="font-size:11px;">AIメモ: '+a.notes+'</span>';
+      q('.pc-detaildone').innerHTML = h; q('.pc-detaildone').classList.remove('hidden');
+    } catch(e){ q('.pc-detailreading').classList.add('hidden'); q('.pc-detaildone').textContent='通信エラー: '+e.message; q('.pc-detaildone').classList.remove('hidden'); }
+  }
+
+  const api = {
+    el,
+    getResult: () => lastResult,
+    status(msg){ q('.pc-status').textContent = msg; },
+    fail(msg){ q('.pc-status').classList.add('hidden'); q('.pc-calcerr').textContent='⚠️ '+msg; q('.pc-calcerr').classList.remove('hidden'); q('.pc-title').textContent='読み取り失敗'; },
+    init(fx, fname){
+      q('.pc-status').classList.add('hidden');
+      // フィールド流し込み
+      el.querySelectorAll('.pc-fields [data-k]').forEach(inp=>{ const k=inp.dataset.k; let v=fx[k]; if(k==='struct'){ inp.value=['wood','steel_light','steel_med','steel','rc','src'].includes(v)?v:'rc'; } else { inp.value=(v==null?'':v); } });
+      // 自信なしハイライト
+      const low = Array.isArray(fx.lowConfidence)?fx.lowConfidence:[];
+      el.querySelectorAll('.pc-fields [data-k]').forEach(inp=>inp.classList.remove('warn'));
+      low.forEach(k=>{ const inp=el.querySelector('.pc-fields [data-k="'+k+'"]'); if(inp) inp.classList.add('warn'); });
+      q('.pc-warn').innerHTML = low.length ? '<div class="warnbox">⚠️ AIが自信を持てなかった項目（黄色）は確認を: '+low.join(', ')+'</div>' : '';
+      // 自動再計算（編集で）
+      let t=null;
+      el.querySelectorAll('.pc-fields [data-k]').forEach(inp=>inp.addEventListener('input',()=>{ clearTimeout(t); t=setTimeout(()=>doCalc(false),600); }));
+      q('.pc-fields').classList.remove('hidden');
+      q('.pc-detailwrap').classList.remove('hidden');
+      q('.pc-title').textContent = (fx.name||fname||'物件');
+      doCalc(true); // ボタン不要・即計算
+    }
+  };
+  cards.push(api);
+  return api;
+}
+
+function badgeHtml(r){
+  if (!r) return '';
+  const ccr = r.CCR;
+  const cls = ccr>=15 ? 'badgeA' : (ccr<10 ? 'badgeD' : '');
+  return '<span class="'+cls+'">CCR '+pct(ccr)+'%</span>';
+}
+
+function renderRanking(){
+  const rows = cards.map(c=>c.getResult()).filter(Boolean);
+  if (!rows.length){ $('rankCard').classList.add('hidden'); return; }
+  rows.sort((a,b)=>(b.CCR||-999)-(a.CCR||-999));
+  $('rankBody').innerHTML = rows.map((r,i)=>{
+    const cls = r.CCR>=15?'badgeA':(r.CCR<10?'badgeD':'');
+    return '<tr><td>'+(i+1)+'</td><td>'+(r.name||'物件')+'</td><td class="r">'+yen(r.price)+'万</td><td class="r">'+pct(r.gy)+'%</td>'+
+      '<td class="r '+cls+'">'+pct(r.CCR)+'%</td><td class="r">'+pct(r.cfR)+'%</td></tr>';
+  }).join('');
+  $('rankCard').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
