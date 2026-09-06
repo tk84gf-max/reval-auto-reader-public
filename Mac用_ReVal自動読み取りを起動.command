@@ -6,7 +6,7 @@ if ! command -v node >/dev/null 2>&1; then
   read -n1 -s; exit 1
 fi
 if [ ! -f "$HOME/.config/reval/apikey.txt" ]; then
-  echo "[!] APIキー未設定。先に「初回設定_APIキー.command」を実行してください。"
+  echo "[!] APIキー未設定。先に「Mac用_初回設定_APIキー.command」を実行してください。"
   read -n1 -s; exit 1
 fi
 if lsof -nP -iTCP:5178 -sTCP:LISTEN >/dev/null 2>&1; then

@@ -16,10 +16,10 @@
 
 ## セットアップ（初回だけ・5分）
 1. このフォルダ一式をダウンロード（ZIP）または `git clone`
-2. **`初回設定_APIキー.bat`** をダブルクリック → 開いたメモ帳に APIキー（`sk-ant-...`）を貼って保存
+2. **`Windows用_初回設定_APIキー.bat`** をダブルクリック → 開いたメモ帳に APIキー（`sk-ant-...`）を貼って保存
    - 鍵は `C:\Users\<あなた>\.config\reval\apikey.txt` に保存されます（このフォルダには入りません＝安全）
-3. **`ReVal自動読み取りを起動.bat`** をダブルクリック → ブラウザが開く（http://localhost:5178）
-   - **Macの方**: `.bat` の代わりに `初回設定_APIキー.command` → `ReVal自動読み取りを起動.command` を **右クリック→「開く」**（鍵の保存先は `~/.config/reval/apikey.txt`）。手順の詳細は同梱の「ReVal_利用手順書.docx」の Mac の章へ
+3. **`Windows用_ReVal自動読み取りを起動.bat`** をダブルクリック → ブラウザが開く（http://localhost:5178）
+   - **Macの方**: `.bat` の代わりに `Mac用_初回設定_APIキー.command` → `Mac用_ReVal自動読み取りを起動.command` を **右クリック→「開く」**（鍵の保存先は `~/.config/reval/apikey.txt`）。手順の詳細は同梱の「ReVal_利用手順書.docx」の Mac の章へ
 
 ## 使い方
 - マイソクをドロップ（複数まとめてOK）／スクショを Ctrl+V → 物件カードが増える

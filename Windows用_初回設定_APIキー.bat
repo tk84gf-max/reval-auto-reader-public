@@ -11,5 +11,5 @@ echo 保存先: %F%
 echo （この鍵で使った分だけ各自に課金されます。1枚あたり数円程度）
 start notepad "%F%"
 echo.
-echo 貼り付け＆保存したら、この窓を閉じて「ReVal自動読み取りを起動.bat」を実行してください。
+echo 貼り付け＆保存したら、この窓を閉じて「Windows用_ReVal自動読み取りを起動.bat」を実行してください。
 pause

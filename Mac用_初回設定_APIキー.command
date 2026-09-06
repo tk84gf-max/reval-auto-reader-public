@@ -7,5 +7,5 @@ echo "取得先: https://console.anthropic.com  （API Keys -> Create Key）"
 echo "保存先: $F"
 open -e "$F"
 echo ""
-echo "貼り付け＆保存したら、このウィンドウを閉じて「ReVal自動読み取りを起動.command」を実行してください。"
+echo "貼り付け＆保存したら、このウィンドウを閉じて「Mac用_ReVal自動読み取りを起動.command」を実行してください。"
 read -n1 -s
