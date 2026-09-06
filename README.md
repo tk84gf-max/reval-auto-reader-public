@@ -8,6 +8,16 @@
 
 ---
 
+## 2つの使い方
+
+| | アプリ版 | 軽量版（Claude Code） |
+|---|---|---|
+| やり方 | 起動ファイルでアプリを立ち上げ、マイソクをドロップ | Claude Code のチャットにマイソクを渡す |
+| 必要なもの | Node.js ＋ Anthropic APIキー（従量課金） | Node.js ＋ Claude Code |
+| 手順書 | 下記＋`ReVal_利用手順書.docx` | [軽量版_秘書に分析してもらう.md](軽量版_秘書に分析してもらう.md) |
+
+以下はアプリ版の説明です。Claude Code をお使いなら軽量版のほうが簡単です。
+
 ## 必要なもの
 1. **Node.js**（無料）… https://nodejs.org の「LTS」を入れる（インストーラは全部Nextで可）
 2. **Anthropic APIキー**（マイソクのAI読み取りに使用）… https://console.anthropic.com で取得
